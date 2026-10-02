@@ -55,6 +55,7 @@ canvas {
     z-index: 5;
     display: flex;
     justify-content: space-between;
+    gap: 10px;
     pointer-events: none;
 }
 
@@ -139,10 +140,12 @@ canvas {
 }
 
 .panel {
-    width: min(90%, 600px);
-    padding: 45px 30px;
+    width: min(94%, 720px);
+    max-height: 90%;
+    overflow-y: auto;
+    padding: 40px 25px;
     border: 1px solid rgba(0,247,255,.6);
-    background: rgba(5,8,25,.88);
+    background: rgba(5,8,25,.92);
     box-shadow:
         0 0 30px rgba(0,247,255,.15),
         inset 0 0 30px rgba(0,247,255,.04);
@@ -202,23 +205,84 @@ button:hover {
     opacity: 0;
 }
 
+#upgradeCards {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.upgradeCard {
+    width: 190px;
+    min-height: 180px;
+    padding: 20px 12px;
+    border: 1px solid #00f7ff;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(0,247,255,.08),
+            rgba(255,38,112,.04)
+        );
+    color: white;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.upgradeCard:hover {
+    transform: translateY(-8px) scale(1.03);
+    background: rgba(0,247,255,.15);
+    box-shadow:
+        0 0 20px rgba(0,247,255,.5),
+        inset 0 0 20px rgba(0,247,255,.08);
+}
+
+.upgradeIcon {
+    font-size: 42px;
+    margin-bottom: 10px;
+}
+
+.upgradeName {
+    color: #00f7ff;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 0 8px #00f7ff;
+}
+
+.upgradeDesc {
+    color: #b7c0ca;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.levelTitle {
+    color: #00ff88;
+    font-size: 15px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px #00ff88;
+}
+
 #mobileControls {
     display: none;
 }
 
 @media (max-width: 700px) {
+
     #game {
         border-width: 1px;
     }
 
     #hud {
         top: 10px;
-        left: 10px;
-        right: 10px;
+        left: 8px;
+        right: 8px;
     }
 
     .hudBox {
-        min-width: 105px;
+        min-width: 0;
+        flex: 1;
         padding: 7px;
     }
 
@@ -227,7 +291,7 @@ button:hover {
     }
 
     #healthOuter {
-        width: 110px;
+        width: 100%;
     }
 
     #mobileControls {
@@ -253,6 +317,28 @@ button:hover {
         display: flex;
         justify-content: center;
     }
+
+    .upgradeCard {
+        width: 145px;
+        min-height: 155px;
+        padding: 12px 8px;
+    }
+
+    .upgradeIcon {
+        font-size: 32px;
+    }
+
+    .upgradeName {
+        font-size: 15px;
+    }
+
+    .upgradeDesc {
+        font-size: 11px;
+    }
+
+    .panel {
+        padding: 25px 12px;
+    }
 }
 </style>
 </head>
@@ -264,6 +350,11 @@ button:hover {
     <canvas id="canvas"></canvas>
 
     <div id="hud">
+
+        <div class="hudBox">
+            <div class="label">LEVEL</div>
+            <div class="value" id="level">1 / 5</div>
+        </div>
 
         <div class="hudBox">
             <div class="label">SCORE</div>
@@ -288,14 +379,17 @@ button:hover {
     <div id="flash"></div>
 
     <div id="mobileControls">
+
         <div class="row">
             <button class="mobileButton" data-key="w">▲</button>
         </div>
+
         <div class="row">
             <button class="mobileButton" data-key="a">◀</button>
             <button class="mobileButton" data-key="s">▼</button>
             <button class="mobileButton" data-key="d">▶</button>
         </div>
+
     </div>
 
     <div id="screen">
@@ -303,17 +397,25 @@ button:hover {
         <div class="panel">
 
             <h1>NEON</h1>
-            <div class="subtitle">ESCAPE</div>
+
+            <div class="subtitle">
+                ESCAPE
+            </div>
 
             <div class="instructions">
+
                 <b>WASD / OK TUŞLARI</b> — Hareket<br>
                 <b>FARE</b> — Nişan al<br>
                 <b>SOL TIK</b> — Ateş et<br><br>
 
-                Düşmanları yok et ve 30 saniye hayatta kal.
+                Düşmanları yok et ve 5 seviyede hayatta kal.<br>
+                Her seviyenin sonunda yeni bir yetenek seç!
+
             </div>
 
-            <button id="startButton">OYUNA BAŞLA</button>
+            <button id="startButton">
+                OYUNA BAŞLA
+            </button>
 
         </div>
 
@@ -322,15 +424,20 @@ button:hover {
 </div>
 
 <script>
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const game = document.getElementById("game");
+
 const scoreEl = document.getElementById("score");
 const timeEl = document.getElementById("time");
+const levelEl = document.getElementById("level");
 const healthEl = document.getElementById("health");
+
 const screen = document.getElementById("screen");
 const startButton = document.getElementById("startButton");
+
 const crosshair = document.getElementById("crosshair");
 const flash = document.getElementById("flash");
 
@@ -338,6 +445,7 @@ let W = 0;
 let H = 0;
 
 function resize() {
+
     W = game.clientWidth;
     H = game.clientHeight;
 
@@ -346,115 +454,274 @@ function resize() {
 }
 
 resize();
+
 window.addEventListener("resize", resize);
 
-/* -------------------------
+
+/* =========================
    OYUNCU
-------------------------- */
+========================= */
 
 const player = {
+
     x: 0,
     y: 0,
+
     radius: 15,
+
     speed: 4,
+
     hp: 100,
     maxHp: 100,
+
+    damage: 1,
+
+    fireRate: 10,
+
+    bulletSpeed: 10,
+
+    damageReduction: 0,
+
     angle: 0,
+
     shootCooldown: 0
 };
 
-/* -------------------------
+
+/* =========================
    OYUN
-------------------------- */
+========================= */
 
 let running = false;
+
 let score = 0;
+
+let level = 1;
+
+const maxLevel = 5;
+
 let timeLeft = 30;
 
 let enemies = [];
+
 let bullets = [];
+
 let particles = [];
 
 let keys = {};
 
 let mouse = {
+
     x: W / 2,
     y: H / 2,
+
     down: false
 };
 
 let lastTime = 0;
+
 let spawnTimer = 0;
+
 let screenShake = 0;
 
-/* -------------------------
+let bossSpawned = false;
+
+
+/* =========================
+   YETENEKLER
+========================= */
+
+const upgrades = [
+
+    {
+        icon: "⚡",
+
+        name: "NEON HIZ",
+
+        desc: "Hareket hızın %15 artar.",
+
+        apply() {
+
+            player.speed *= 1.15;
+        }
+    },
+
+    {
+        icon: "💥",
+
+        name: "GÜÇLÜ MERMİ",
+
+        desc: "Mermi hasarın +1 artar.",
+
+        apply() {
+
+            player.damage += 1;
+        }
+    },
+
+    {
+        icon: "🔫",
+
+        name: "HIZLI ATEŞ",
+
+        desc: "Ateş etme hızın %20 artar.",
+
+        apply() {
+
+            player.fireRate *= 0.8;
+
+            if (player.fireRate < 2) {
+                player.fireRate = 2;
+            }
+        }
+    },
+
+    {
+        icon: "❤️",
+
+        name: "ENERJİ ÇEKİRDEĞİ",
+
+        desc: "Maksimum canın +25 olur ve 25 HP iyileşirsin.",
+
+        apply() {
+
+            player.maxHp += 25;
+
+            player.hp = Math.min(
+                player.maxHp,
+                player.hp + 25
+            );
+        }
+    },
+
+    {
+        icon: "🛡️",
+
+        name: "NEON KALKAN",
+
+        desc: "Alınan hasar %15 azalır.",
+
+        apply() {
+
+            player.damageReduction += 0.15;
+
+            if (player.damageReduction > 0.75) {
+                player.damageReduction = 0.75;
+            }
+        }
+    },
+
+    {
+        icon: "🔵",
+
+        name: "HIZLI MERMİ",
+
+        desc: "Mermi hızı %20 artar.",
+
+        apply() {
+
+            player.bulletSpeed *= 1.2;
+        }
+    }
+
+];
+
+
+/* =========================
    KLAVYE
-------------------------- */
+========================= */
 
 window.addEventListener("keydown", e => {
+
     keys[e.key.toLowerCase()] = true;
 
     if (
-        ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", " "]
-        .includes(e.key.toLowerCase())
+        [
+            "w",
+            "a",
+            "s",
+            "d",
+            "arrowup",
+            "arrowdown",
+            "arrowleft",
+            "arrowright",
+            " "
+        ].includes(e.key.toLowerCase())
     ) {
         e.preventDefault();
     }
 });
 
+
 window.addEventListener("keyup", e => {
+
     keys[e.key.toLowerCase()] = false;
 });
 
-/* -------------------------
+
+/* =========================
    MOUSE
-------------------------- */
+========================= */
 
 game.addEventListener("mousemove", e => {
 
     const rect = game.getBoundingClientRect();
 
     mouse.x = e.clientX - rect.left;
+
     mouse.y = e.clientY - rect.top;
 
     crosshair.style.left = mouse.x + "px";
+
     crosshair.style.top = mouse.y + "px";
 });
 
+
 game.addEventListener("mousedown", e => {
+
     if (e.button === 0) {
+
         mouse.down = true;
     }
 });
 
+
 window.addEventListener("mouseup", e => {
+
     if (e.button === 0) {
+
         mouse.down = false;
     }
 });
 
-/* -------------------------
-   MOBİL KONTROLLER
-------------------------- */
+
+/* =========================
+   MOBİL
+========================= */
 
 document.querySelectorAll(".mobileButton").forEach(button => {
 
     const key = button.dataset.key;
 
     button.addEventListener("touchstart", e => {
+
         e.preventDefault();
+
         keys[key] = true;
     });
 
     button.addEventListener("touchend", e => {
+
         e.preventDefault();
+
         keys[key] = false;
     });
 });
 
-/* -------------------------
-   BAŞLAT
-------------------------- */
+
+/* =========================
+   OYUNU BAŞLAT
+========================= */
 
 function startGame() {
 
@@ -463,33 +730,64 @@ function startGame() {
     running = true;
 
     score = 0;
+
+    level = 1;
+
     timeLeft = 30;
 
     enemies = [];
+
     bullets = [];
+
     particles = [];
 
+    bossSpawned = false;
+
     player.x = W / 2;
+
     player.y = H / 2;
 
+    player.speed = 4;
+
     player.hp = 100;
+
+    player.maxHp = 100;
+
+    player.damage = 1;
+
+    player.fireRate = 10;
+
+    player.bulletSpeed = 10;
+
+    player.damageReduction = 0;
+
     player.shootCooldown = 0;
 
     scoreEl.textContent = "0";
+
     timeEl.textContent = "30";
+
+    levelEl.textContent = "1 / 5";
+
     healthEl.style.width = "100%";
+
     healthEl.style.background = "#00ff88";
+
+    healthEl.style.boxShadow = "0 0 10px #00ff88";
 
     screen.classList.add("hidden");
 
     lastTime = performance.now();
 
+    spawnTimer = 0;
+
     requestAnimationFrame(gameLoop);
 }
 
-/* -------------------------
+
+/* =========================
    DÜŞMAN OLUŞTUR
-------------------------- */
+========================= */
 
 function spawnEnemy() {
 
@@ -499,171 +797,350 @@ function spawnEnemy() {
     const side = Math.floor(Math.random() * 4);
 
     if (side === 0) {
+
         x = Math.random() * W;
         y = -40;
     }
 
     if (side === 1) {
+
         x = W + 40;
         y = Math.random() * H;
     }
 
     if (side === 2) {
+
         x = Math.random() * W;
         y = H + 40;
     }
 
     if (side === 3) {
+
         x = -40;
         y = Math.random() * H;
     }
 
+    const levelPower = level - 1;
+
     enemies.push({
+
         x,
         y,
+
         radius: 14 + Math.random() * 5,
-        speed: 1.1 + Math.random() * .7 + (30 - timeLeft) * .025,
-        hp: 1,
-        hitFlash: 0
+
+        speed:
+            1.1 +
+            Math.random() * .7 +
+            levelPower * .25,
+
+        hp:
+            1 +
+            Math.floor(levelPower * .7),
+
+        maxHp:
+            1 +
+            Math.floor(levelPower * .7),
+
+        damage:
+            22 +
+            levelPower * 4,
+
+        hitFlash: 0,
+
+        boss: false
     });
 }
 
-/* -------------------------
+
+/* =========================
+   BOSS
+========================= */
+
+function spawnBoss() {
+
+    const side = Math.floor(Math.random() * 4);
+
+    let x;
+    let y;
+
+    if (side === 0) {
+
+        x = W / 2;
+        y = -100;
+
+    } else if (side === 1) {
+
+        x = W + 100;
+        y = H / 2;
+
+    } else if (side === 2) {
+
+        x = W / 2;
+        y = H + 100;
+
+    } else {
+
+        x = -100;
+        y = H / 2;
+    }
+
+    enemies.push({
+
+        x,
+        y,
+
+        radius: 38,
+
+        speed: 0.65,
+
+        hp: 35,
+
+        maxHp: 35,
+
+        damage: 35,
+
+        hitFlash: 0,
+
+        boss: true
+    });
+
+    bossSpawned = true;
+}
+
+
+/* =========================
    ATEŞ
-------------------------- */
+========================= */
 
 function shoot() {
 
-    if (player.shootCooldown > 0) return;
+    if (player.shootCooldown > 0) {
+        return;
+    }
 
     const dx = mouse.x - player.x;
+
     const dy = mouse.y - player.y;
 
     const distance = Math.hypot(dx, dy);
 
-    if (distance === 0) return;
+    if (distance === 0) {
+        return;
+    }
 
-    const speed = 10;
+    const speed = player.bulletSpeed;
 
     bullets.push({
+
         x: player.x,
+
         y: player.y,
+
         vx: dx / distance * speed,
+
         vy: dy / distance * speed,
-        life: 70
+
+        life: 70,
+
+        damage: player.damage
     });
 
-    player.shootCooldown = 10;
+    player.shootCooldown = player.fireRate;
 
     createParticles(
+
         player.x + dx / distance * 20,
+
         player.y + dy / distance * 20,
+
         "#00f7ff",
+
         4
     );
 }
 
-/* -------------------------
+
+/* =========================
    PARÇACIK
-------------------------- */
+========================= */
 
 function createParticles(x, y, color, amount = 10) {
 
     for (let i = 0; i < amount; i++) {
 
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 3 + 1;
+        const angle =
+            Math.random() * Math.PI * 2;
+
+        const speed =
+            Math.random() * 3 + 1;
 
         particles.push({
+
             x,
+
             y,
+
             vx: Math.cos(angle) * speed,
+
             vy: Math.sin(angle) * speed,
+
             life: 25 + Math.random() * 25,
+
             maxLife: 50,
+
             size: Math.random() * 3 + 1,
+
             color
         });
     }
 }
 
-/* -------------------------
+
+/* =========================
    OYUNCU GÜNCELLE
-------------------------- */
+========================= */
 
 function updatePlayer(dt) {
 
     let dx = 0;
+
     let dy = 0;
 
-    if (keys["w"] || keys["arrowup"]) dy--;
-    if (keys["s"] || keys["arrowdown"]) dy++;
-    if (keys["a"] || keys["arrowleft"]) dx--;
-    if (keys["d"] || keys["arrowright"]) dx++;
+    if (keys["w"] || keys["arrowup"]) {
+        dy--;
+    }
+
+    if (keys["s"] || keys["arrowdown"]) {
+        dy++;
+    }
+
+    if (keys["a"] || keys["arrowleft"]) {
+        dx--;
+    }
+
+    if (keys["d"] || keys["arrowright"]) {
+        dx++;
+    }
 
     if (dx !== 0 || dy !== 0) {
 
         const length = Math.hypot(dx, dy);
 
         dx /= length;
+
         dy /= length;
 
-        player.x += dx * player.speed * dt;
-        player.y += dy * player.speed * dt;
+        player.x +=
+            dx *
+            player.speed *
+            dt;
+
+        player.y +=
+            dy *
+            player.speed *
+            dt;
     }
 
-    player.x = Math.max(player.radius, Math.min(W - player.radius, player.x));
-    player.y = Math.max(player.radius, Math.min(H - player.radius, player.y));
+    player.x = Math.max(
+
+        player.radius,
+
+        Math.min(
+            W - player.radius,
+            player.x
+        )
+    );
+
+    player.y = Math.max(
+
+        player.radius,
+
+        Math.min(
+            H - player.radius,
+            player.y
+        )
+    );
 
     player.angle = Math.atan2(
+
         mouse.y - player.y,
+
         mouse.x - player.x
     );
 
     if (player.shootCooldown > 0) {
+
         player.shootCooldown -= dt;
     }
 
     if (mouse.down) {
+
         shoot();
     }
 }
 
-/* -------------------------
+
+/* =========================
    DÜŞMAN GÜNCELLE
-------------------------- */
+========================= */
 
 function updateEnemies(dt) {
 
-    for (let i = enemies.length - 1; i >= 0; i--) {
+    for (
+        let i = enemies.length - 1;
+        i >= 0;
+        i--
+    ) {
 
         const enemy = enemies[i];
 
-        const dx = player.x - enemy.x;
-        const dy = player.y - enemy.y;
+        const dx =
+            player.x - enemy.x;
 
-        const distance = Math.hypot(dx, dy);
+        const dy =
+            player.y - enemy.y;
+
+        const distance =
+            Math.hypot(dx, dy);
 
         if (distance > 0) {
 
-            enemy.x += dx / distance * enemy.speed * dt;
-            enemy.y += dy / distance * enemy.speed * dt;
+            enemy.x +=
+                dx / distance *
+                enemy.speed *
+                dt;
+
+            enemy.y +=
+                dy / distance *
+                enemy.speed *
+                dt;
         }
 
         if (enemy.hitFlash > 0) {
+
             enemy.hitFlash -= dt;
         }
 
-        if (distance < player.radius + enemy.radius) {
+        if (
+            distance <
+            player.radius +
+            enemy.radius
+        ) {
 
-            player.hp -= 22 * dt;
+            player.hp -=
+                enemy.damage *
+                (1 - player.damageReduction) *
+                dt;
 
             screenShake = 5;
 
             flash.style.opacity = ".12";
 
             setTimeout(() => {
+
                 flash.style.opacity = "0";
+
             }, 50);
 
             if (player.hp <= 0) {
@@ -671,23 +1148,30 @@ function updateEnemies(dt) {
                 player.hp = 0;
 
                 endGame(false);
+
                 return;
             }
         }
     }
 }
 
-/* -------------------------
+
+/* =========================
    MERMİLER
-------------------------- */
+========================= */
 
 function updateBullets(dt) {
 
-    for (let i = bullets.length - 1; i >= 0; i--) {
+    for (
+        let i = bullets.length - 1;
+        i >= 0;
+        i--
+    ) {
 
         const bullet = bullets[i];
 
         bullet.x += bullet.vx * dt;
+
         bullet.y += bullet.vy * dt;
 
         bullet.life -= dt;
@@ -695,173 +1179,294 @@ function updateBullets(dt) {
         let removeBullet = false;
 
         if (
+
             bullet.life <= 0 ||
+
             bullet.x < -50 ||
+
             bullet.x > W + 50 ||
+
             bullet.y < -50 ||
+
             bullet.y > H + 50
+
         ) {
+
             removeBullet = true;
         }
 
-        for (let j = enemies.length - 1; j >= 0; j--) {
+        for (
+            let j = enemies.length - 1;
+            j >= 0;
+            j--
+        ) {
 
             const enemy = enemies[j];
 
-            const distance = Math.hypot(
-                bullet.x - enemy.x,
-                bullet.y - enemy.y
-            );
+            const distance =
+                Math.hypot(
 
-            if (distance < enemy.radius + 5) {
+                    bullet.x - enemy.x,
 
-                createParticles(
-                    enemy.x,
-                    enemy.y,
-                    "#ff2670",
-                    15
+                    bullet.y - enemy.y
                 );
 
-                enemies.splice(j, 1);
+            if (
+                distance <
+                enemy.radius + 5
+            ) {
 
-                score += 100;
+                enemy.hp -= bullet.damage;
 
-                scoreEl.textContent = score;
+                enemy.hitFlash = 5;
+
+                createParticles(
+
+                    bullet.x,
+
+                    bullet.y,
+
+                    "#ffffff",
+
+                    enemy.boss ? 5 : 3
+                );
+
+                if (enemy.hp <= 0) {
+
+                    createParticles(
+
+                        enemy.x,
+
+                        enemy.y,
+
+                        enemy.boss
+                            ? "#ffaa00"
+                            : "#ff2670",
+
+                        enemy.boss
+                            ? 50
+                            : 15
+                    );
+
+                    score +=
+                        enemy.boss
+                            ? 1500
+                            : 100 * level;
+
+                    scoreEl.textContent =
+                        score;
+
+                    enemies.splice(j, 1);
+
+                    if (enemy.boss) {
+
+                        screenShake = 15;
+                    }
+                }
 
                 removeBullet = true;
 
-                screenShake = 4;
+                screenShake =
+                    enemy.boss
+                        ? 8
+                        : 4;
 
                 break;
             }
         }
 
         if (removeBullet) {
+
             bullets.splice(i, 1);
         }
     }
 }
 
-/* -------------------------
+
+/* =========================
    PARÇACIKLAR
-------------------------- */
+========================= */
 
 function updateParticles(dt) {
 
-    for (let i = particles.length - 1; i >= 0; i--) {
+    for (
+        let i = particles.length - 1;
+        i >= 0;
+        i--
+    ) {
 
         const p = particles[i];
 
         p.x += p.vx * dt;
+
         p.y += p.vy * dt;
 
         p.vx *= .96;
+
         p.vy *= .96;
 
         p.life -= dt;
 
         if (p.life <= 0) {
+
             particles.splice(i, 1);
         }
     }
 }
 
-/* -------------------------
-   ÇİZİM
-------------------------- */
+
+/* =========================
+   ARKA PLAN
+========================= */
 
 function drawBackground() {
 
     ctx.fillStyle = "#080816";
-    ctx.fillRect(0, 0, W, H);
 
-    /* Grid */
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
 
-    ctx.strokeStyle = "rgba(0,247,255,.07)";
+    ctx.strokeStyle =
+        "rgba(0,247,255,.07)";
+
     ctx.lineWidth = 1;
 
     const grid = 40;
 
-    for (let x = 0; x < W; x += grid) {
+    for (
+        let x = 0;
+        x < W;
+        x += grid
+    ) {
 
         ctx.beginPath();
+
         ctx.moveTo(x, 0);
+
         ctx.lineTo(x, H);
+
         ctx.stroke();
     }
 
-    for (let y = 0; y < H; y += grid) {
+    for (
+        let y = 0;
+        y < H;
+        y += grid
+    ) {
 
         ctx.beginPath();
+
         ctx.moveTo(0, y);
+
         ctx.lineTo(W, y);
+
         ctx.stroke();
     }
 
-    /* Ortadaki neon alan */
+    const gradient =
+        ctx.createRadialGradient(
 
-    const gradient = ctx.createRadialGradient(
-        W / 2,
-        H / 2,
+            W / 2,
+            H / 2,
+            0,
+
+            W / 2,
+            H / 2,
+            Math.max(W, H) / 2
+        );
+
+    gradient.addColorStop(
+
         0,
-        W / 2,
-        H / 2,
-        Math.max(W, H) / 2
+
+        "rgba(0,247,255,.08)"
     );
 
-    gradient.addColorStop(0, "rgba(0,247,255,.08)");
-    gradient.addColorStop(1, "rgba(0,0,0,0)");
+    gradient.addColorStop(
+
+        1,
+
+        "rgba(0,0,0,0)"
+    );
 
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
 }
 
-/* -------------------------
-   OYUNCUYU ÇİZ
-------------------------- */
+
+/* =========================
+   OYUNCU ÇİZ
+========================= */
 
 function drawPlayer() {
 
     ctx.save();
 
-    ctx.translate(player.x, player.y);
-    ctx.rotate(player.angle);
+    ctx.translate(
+        player.x,
+        player.y
+    );
 
-    /* Glow */
+    ctx.rotate(
+        player.angle
+    );
 
     ctx.shadowBlur = 25;
-    ctx.shadowColor = "#00f7ff";
 
-    /* Gövde */
+    ctx.shadowColor =
+        "#00f7ff";
 
-    ctx.fillStyle = "#00f7ff";
+    ctx.fillStyle =
+        "#00f7ff";
 
     ctx.beginPath();
 
     ctx.moveTo(20, 0);
+
     ctx.lineTo(-12, -12);
+
     ctx.lineTo(-7, 0);
+
     ctx.lineTo(-12, 12);
+
     ctx.closePath();
 
     ctx.fill();
 
-    /* İç */
-
     ctx.shadowBlur = 0;
 
-    ctx.fillStyle = "#06121a";
+    ctx.fillStyle =
+        "#06121a";
 
     ctx.beginPath();
-    ctx.arc(-2, 0, 5, 0, Math.PI * 2);
+
+    ctx.arc(
+        -2,
+        0,
+        5,
+        0,
+        Math.PI * 2
+    );
+
     ctx.fill();
 
     ctx.restore();
 }
 
-/* -------------------------
-   DÜŞMAN ÇİZ
-------------------------- */
+
+/* =========================
+   DÜŞMANLAR ÇİZ
+========================= */
 
 function drawEnemies() {
 
@@ -869,42 +1474,129 @@ function drawEnemies() {
 
         ctx.save();
 
-        ctx.translate(enemy.x, enemy.y);
-
-        ctx.shadowBlur = 22;
-        ctx.shadowColor = "#ff1744";
-
-        ctx.fillStyle =
-            enemy.hitFlash > 0
-                ? "#ffffff"
-                : "#ff1744";
-
-        ctx.beginPath();
-        ctx.arc(
-            0,
-            0,
-            enemy.radius,
-            0,
-            Math.PI * 2
+        ctx.translate(
+            enemy.x,
+            enemy.y
         );
 
-        ctx.fill();
+        if (enemy.boss) {
 
-        ctx.shadowBlur = 0;
+            ctx.shadowBlur = 35;
 
-        ctx.fillStyle = "#29000b";
+            ctx.shadowColor =
+                "#ffaa00";
 
-        ctx.beginPath();
-        ctx.arc(0, 0, enemy.radius * .45, 0, Math.PI * 2);
-        ctx.fill();
+            ctx.fillStyle =
+                enemy.hitFlash > 0
+                    ? "#ffffff"
+                    : "#ff8800";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                enemy.radius,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle =
+                "#2b1000";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                enemy.radius * .5,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+            /* Boss HP */
+
+            const barWidth = 80;
+
+            const hpPercent =
+                enemy.hp / enemy.maxHp;
+
+            ctx.fillStyle =
+                "#220000";
+
+            ctx.fillRect(
+                -barWidth / 2,
+                -enemy.radius - 14,
+                barWidth,
+                6
+            );
+
+            ctx.fillStyle =
+                "#ff1744";
+
+            ctx.fillRect(
+                -barWidth / 2,
+                -enemy.radius - 14,
+                barWidth * hpPercent,
+                6
+            );
+
+        } else {
+
+            ctx.shadowBlur = 22;
+
+            ctx.shadowColor =
+                "#ff1744";
+
+            ctx.fillStyle =
+                enemy.hitFlash > 0
+                    ? "#ffffff"
+                    : "#ff1744";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                enemy.radius,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle =
+                "#29000b";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                enemy.radius * .45,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+        }
 
         ctx.restore();
     });
 }
 
-/* -------------------------
-   MERMİLERİ ÇİZ
-------------------------- */
+
+/* =========================
+   MERMİLER ÇİZ
+========================= */
 
 function drawBullets() {
 
@@ -912,17 +1604,26 @@ function drawBullets() {
 
         ctx.save();
 
-        ctx.fillStyle = "#00f7ff";
+        ctx.fillStyle =
+            "#00f7ff";
+
         ctx.shadowBlur = 15;
-        ctx.shadowColor = "#00f7ff";
+
+        ctx.shadowColor =
+            "#00f7ff";
 
         ctx.beginPath();
 
         ctx.arc(
+
             bullet.x,
+
             bullet.y,
+
             4,
+
             0,
+
             Math.PI * 2
         );
 
@@ -932,9 +1633,10 @@ function drawBullets() {
     });
 }
 
-/* -------------------------
+
+/* =========================
    PARÇACIKLARI ÇİZ
-------------------------- */
+========================= */
 
 function drawParticles() {
 
@@ -942,20 +1644,32 @@ function drawParticles() {
 
         ctx.save();
 
-        ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+        ctx.globalAlpha =
+            Math.max(
+                0,
+                p.life / p.maxLife
+            );
 
-        ctx.fillStyle = p.color;
+        ctx.fillStyle =
+            p.color;
 
         ctx.shadowBlur = 10;
-        ctx.shadowColor = p.color;
+
+        ctx.shadowColor =
+            p.color;
 
         ctx.beginPath();
 
         ctx.arc(
+
             p.x,
+
             p.y,
+
             p.size,
+
             0,
+
             Math.PI * 2
         );
 
@@ -965,23 +1679,189 @@ function drawParticles() {
     });
 }
 
-/* -------------------------
+
+/* =========================
+   YETENEK EKRANI
+========================= */
+
+function showUpgradeScreen() {
+
+    running = false;
+
+    mouse.down = false;
+
+    screen.classList.remove("hidden");
+
+    const panel =
+        screen.querySelector(".panel");
+
+    let choices =
+        [...upgrades]
+            .sort(
+                () =>
+                    Math.random() - .5
+            )
+            .slice(0, 3);
+
+    panel.innerHTML = `
+
+        <div class="levelTitle">
+            LEVEL ${level} TAMAMLANDI
+        </div>
+
+        <h1 style="font-size:45px">
+            GÜÇLEN
+        </h1>
+
+        <div class="subtitle">
+            BİR YETENEK SEÇ
+        </div>
+
+        <div class="instructions">
+            Seçtiğin yetenek oyunun geri kalanında aktif kalır.
+        </div>
+
+        <div id="upgradeCards"></div>
+    `;
+
+    const cards =
+        document.getElementById(
+            "upgradeCards"
+        );
+
+    choices.forEach(upgrade => {
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "upgradeCard";
+
+        card.innerHTML = `
+
+            <div class="upgradeIcon">
+                ${upgrade.icon}
+            </div>
+
+            <div class="upgradeName">
+                ${upgrade.name}
+            </div>
+
+            <div class="upgradeDesc">
+                ${upgrade.desc}
+            </div>
+        `;
+
+        card.addEventListener(
+            "click",
+            () => {
+
+                upgrade.apply();
+
+                screen.classList.add(
+                    "hidden"
+                );
+
+                timeLeft = 30;
+
+                enemies = [];
+
+                bullets = [];
+
+                spawnTimer = 0;
+
+                lastTime =
+                    performance.now();
+
+                updateHUD();
+
+                running = true;
+
+                requestAnimationFrame(
+                    gameLoop
+                );
+            }
+        );
+
+        cards.appendChild(card);
+    });
+}
+
+
+/* =========================
+   HUD
+========================= */
+
+function updateHUD() {
+
+    levelEl.textContent =
+        level + " / " + maxLevel;
+
+    scoreEl.textContent =
+        score;
+
+    timeEl.textContent =
+        Math.ceil(timeLeft);
+
+    healthEl.style.width =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                player.hp /
+                player.maxHp *
+                100
+            )
+        ) + "%";
+
+    if (
+        player.hp /
+        player.maxHp
+        < .35
+    ) {
+
+        healthEl.style.background =
+            "#ff1744";
+
+        healthEl.style.boxShadow =
+            "0 0 10px #ff1744";
+
+    } else {
+
+        healthEl.style.background =
+            "#00ff88";
+
+        healthEl.style.boxShadow =
+            "0 0 10px #00ff88";
+    }
+}
+
+
+/* =========================
    OYUN DÖNGÜSÜ
-------------------------- */
+========================= */
 
 function gameLoop(timestamp) {
 
-    if (!running) return;
+    if (!running) {
+        return;
+    }
 
-    let dt = (timestamp - lastTime) / 16.67;
+    let dt =
+        (timestamp - lastTime) /
+        16.67;
 
-    if (dt > 2) dt = 2;
+    if (dt > 2) {
+        dt = 2;
+    }
 
     lastTime = timestamp;
 
-    /* Süre */
+
+    /* SÜRE */
 
     timeLeft -= dt / 60;
+
 
     if (timeLeft <= 0) {
 
@@ -989,104 +1869,178 @@ function gameLoop(timestamp) {
 
         timeEl.textContent = "0";
 
-        endGame(true);
 
-        return;
+        if (level >= maxLevel) {
+
+            endGame(true);
+
+            return;
+
+        } else {
+
+            level++;
+
+            levelEl.textContent =
+                level + " / " + maxLevel;
+
+            showUpgradeScreen();
+
+            return;
+        }
     }
 
-    timeEl.textContent = Math.ceil(timeLeft);
 
-    /* Düşman spawn */
+    /* BOSS */
+
+    if (
+        level === maxLevel &&
+        !bossSpawned &&
+        timeLeft < 20
+    ) {
+
+        spawnBoss();
+    }
+
+
+    /* DÜŞMAN SPAWN */
 
     spawnTimer -= dt;
 
     const spawnSpeed =
         Math.max(
-            25,
-            75 - (30 - timeLeft) * 1.5
+
+            18,
+
+            70 -
+            (level - 1) * 9 -
+            (30 - timeLeft) * 1.3
         );
+
 
     if (spawnTimer <= 0) {
 
         spawnEnemy();
 
-        if (timeLeft < 20 && Math.random() < .25) {
+        if (
+            level >= 2 &&
+            Math.random() < .25
+        ) {
+
             spawnEnemy();
         }
 
-        spawnTimer = spawnSpeed;
+        if (
+            level >= 4 &&
+            Math.random() < .2
+        ) {
+
+            spawnEnemy();
+        }
+
+        spawnTimer =
+            spawnSpeed;
     }
 
+
     updatePlayer(dt);
+
     updateEnemies(dt);
+
     updateBullets(dt);
+
     updateParticles(dt);
+
 
     /* HP */
 
-    healthEl.style.width =
-        Math.max(0, player.hp) + "%";
+    updateHUD();
 
-    if (player.hp < 35) {
-        healthEl.style.background = "#ff1744";
-        healthEl.style.boxShadow = "0 0 10px #ff1744";
-    } else {
-        healthEl.style.background = "#00ff88";
-        healthEl.style.boxShadow = "0 0 10px #00ff88";
-    }
 
-    /* Ekran çiz */
+    /* ÇİZİM */
 
     ctx.save();
 
     if (screenShake > 0) {
 
         ctx.translate(
-            (Math.random() - .5) * screenShake,
-            (Math.random() - .5) * screenShake
+
+            (Math.random() - .5) *
+            screenShake,
+
+            (Math.random() - .5) *
+            screenShake
         );
 
         screenShake *= .85;
     }
 
     drawBackground();
+
     drawParticles();
+
     drawBullets();
+
     drawEnemies();
+
     drawPlayer();
 
     ctx.restore();
 
-    requestAnimationFrame(gameLoop);
+
+    requestAnimationFrame(
+        gameLoop
+    );
 }
 
-/* -------------------------
+
+/* =========================
    OYUN SONU
-------------------------- */
+========================= */
 
 function endGame(won) {
 
     running = false;
+
     mouse.down = false;
 
-    screen.classList.remove("hidden");
+    screen.classList.remove(
+        "hidden"
+    );
 
-    const panel = screen.querySelector(".panel");
+    const panel =
+        screen.querySelector(
+            ".panel"
+        );
+
 
     if (won) {
 
         panel.innerHTML = `
-            <h1 style="color:#00ff88;text-shadow:0 0 20px #00ff88">
+
+            <h1
+                style="
+                color:#00ff88;
+                text-shadow:0 0 20px #00ff88;
+                "
+            >
                 KAZANDIN
             </h1>
 
-            <div class="subtitle" style="color:#00ff88">
+            <div
+                class="subtitle"
+                style="color:#00ff88"
+            >
                 NEON SURVIVOR
             </div>
 
             <div class="instructions">
-                30 saniye hayatta kaldın!<br><br>
-                <b>SKOR: ${score}</b>
+
+                5 seviyeyi tamamladın!<br><br>
+
+                <b>SKOR: ${score}</b><br><br>
+
+                Neon dünyadan kaçmayı başardın.
+
             </div>
 
             <button id="restartButton">
@@ -1097,7 +2051,13 @@ function endGame(won) {
     } else {
 
         panel.innerHTML = `
-            <h1 style="color:#ff1744;text-shadow:0 0 20px #ff1744">
+
+            <h1
+                style="
+                color:#ff1744;
+                text-shadow:0 0 20px #ff1744;
+                "
+            >
                 YOK OLDUN
             </h1>
 
@@ -1106,8 +2066,13 @@ function endGame(won) {
             </div>
 
             <div class="instructions">
+
                 Düşmanlar seni yakaladı.<br><br>
+
+                <b>ULAŞILAN LEVEL: ${level}</b><br>
+
                 <b>SKOR: ${score}</b>
+
             </div>
 
             <button id="restartButton">
@@ -1116,16 +2081,26 @@ function endGame(won) {
         `;
     }
 
+
     document
-        .getElementById("restartButton")
-        .addEventListener("click", startGame);
+        .getElementById(
+            "restartButton"
+        )
+        .addEventListener(
+            "click",
+            startGame
+        );
 }
 
-/* -------------------------
-   BAŞLAT BUTONU
-------------------------- */
 
-startButton.addEventListener("click", startGame);
+/* =========================
+   BAŞLAT
+========================= */
+
+startButton.addEventListener(
+    "click",
+    startGame
+);
 
 </script>
 
